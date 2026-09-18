@@ -76,6 +76,7 @@ class SettingsDialog(ctk.CTkToplevel):
         provider_id = str(self.settings.get("source_provider", "pexels"))
         provider_display = self.providers.get(provider_id, provider_id)
         self.provider_var = ctk.StringVar(value=provider_display)
+        self.active_provider_id = provider_id
         self.provider_key_var = ctk.StringVar(
             value=get_source_api_key(self.secrets, provider_id)
         )
@@ -234,7 +235,13 @@ class SettingsDialog(ctk.CTkToplevel):
         return self.provider_names_to_ids.get(display, display.lower())
 
     def _provider_changed(self, _display_name: str) -> None:
+        self.secrets = set_source_api_key(
+            self.secrets,
+            self.active_provider_id,
+            self.provider_key_var.get(),
+        )
         provider_id = self._current_provider_id()
+        self.active_provider_id = provider_id
         self.provider_key_var.set(
             get_source_api_key(self.secrets, provider_id)
         )
@@ -249,6 +256,7 @@ class SettingsDialog(ctk.CTkToplevel):
 
     def _save(self) -> None:
         provider_id = self._current_provider_id()
+        self.active_provider_id = provider_id
         updated_secrets = set_source_api_key(
             self.secrets,
             provider_id,

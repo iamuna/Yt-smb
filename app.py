@@ -513,10 +513,11 @@ class ShortsFactoryApp(ctk.CTk):
 
             if self.settings.get("publish_enabled", False):
                 secrets = load_secrets()
-                client_file = Path(secrets.get("youtube_client_secrets", ""))
-                if not client_file.exists():
+                client_value = secrets.get("youtube_client_secrets", "").strip()
+                client_file = Path(client_value) if client_value else None
+                if client_file is None or not client_file.is_file():
                     raise RuntimeError(
-                        "Auto-upload is enabled, but the YouTube OAuth JSON path is missing."
+                        "Auto-upload is enabled, but the YouTube OAuth JSON file is missing."
                     )
 
                 uploaded_id = upload_video(
@@ -649,8 +650,9 @@ class ShortsFactoryApp(ctk.CTk):
             return
 
         secrets = load_secrets()
-        client_file = Path(secrets.get("youtube_client_secrets", ""))
-        if not client_file.exists():
+        client_value = secrets.get("youtube_client_secrets", "").strip()
+        client_file = Path(client_value) if client_value else None
+        if client_file is None or not client_file.is_file():
             messagebox.showwarning(
                 "YouTube not connected",
                 "Open Settings and choose your Google OAuth client secrets JSON first.",

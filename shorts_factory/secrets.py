@@ -17,6 +17,9 @@ DEFAULT_SECRETS = {
 
 def _migrate_secrets(data: dict) -> dict:
     migrated = dict(data)
+    # v0.2 used an OpenAI API key. It is intentionally discarded in v0.3
+    # so the free-local architecture does not keep or reuse paid-AI credentials.
+    migrated.pop("openai_api_key", None)
     keys = dict(migrated.get("source_provider_keys") or {})
 
     legacy_pexels = str(migrated.get("pexels_api_key", "")).strip()

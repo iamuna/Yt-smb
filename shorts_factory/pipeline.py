@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -18,6 +18,8 @@ class BuildRequest:
     voice: str
     target_seconds: int
     use_voice: bool = True
+    extra_clips: list[Path] = field(default_factory=list)
+    captions: bool = True
 
 
 @dataclass
@@ -28,12 +30,23 @@ class BuildResult:
 
 def create_short(request: BuildRequest) -> BuildResult:
     clips = find_video_files(request.source_folder)
+    clips.extend(path for path in request.extra_clips if path.exists())
+
+    # De-duplicate while preserving order.
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for clip in clips:
+        key = str(clip.resolve()).lower()
+        if key not in seen:
+            unique.append(clip)
+            seen.add(key)
+
+    clips = unique[:30]
     if not clips:
         raise RuntimeError(
-            "No video clips found. Add MP4/MOV/MKV/WebM files to the selected folder."
+            "No source video was found. Add local clips or enable Pexels in Settings."
         )
 
-    clips = clips[:25]
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     slug = safe_slug(request.hook)
     job_temp = TEMP_DIR / f"{stamp}-{slug}"
@@ -52,5 +65,6 @@ def create_short(request: BuildRequest) -> BuildResult:
         hook=request.hook.strip() or "Watch this",
         target_seconds=request.target_seconds,
         narration_path=narration,
+        caption_text=request.script if request.captions else "",
     )
     return BuildResult(output_path=output, clip_count=len(clips))

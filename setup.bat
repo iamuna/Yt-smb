@@ -32,15 +32,25 @@ if errorlevel 1 goto :error
 echo.
 where ffmpeg >nul 2>nul
 if errorlevel 1 (
-  echo WARNING: FFmpeg is not on PATH yet.
-  echo The app will open, but video creation needs FFmpeg.
+  echo FFmpeg is missing.
+  where winget >nul 2>nul
+  if not errorlevel 1 (
+    set /p INSTALL_FFMPEG="Install FFmpeg automatically with winget? [Y/N]: "
+    if /I "%INSTALL_FFMPEG%"=="Y" (
+      winget install --id Gyan.FFmpeg -e --accept-package-agreements --accept-source-agreements
+      echo.
+      echo If FFmpeg was just installed, close this window and run setup.bat once more.
+    )
+  ) else (
+    echo Install FFmpeg and make sure ffmpeg.exe and ffprobe.exe are on PATH.
+  )
 ) else (
   echo FFmpeg detected.
 )
 
 echo.
 echo Setup complete.
-echo You can now double-click start.bat
+echo Double-click start.bat to launch YT SMB.
 pause
 exit /b 0
 

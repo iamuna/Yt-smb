@@ -211,7 +211,7 @@ def build_vertical_short(
             "-map",
             f"{narration_index}:a:0",
             "-af",
-            f"apad=whole_dur={video_duration:.3f}",
+            "apad",
             "-c:a",
             "aac",
             "-b:a",

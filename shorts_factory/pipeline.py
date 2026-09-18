@@ -20,6 +20,7 @@ class BuildRequest:
     use_voice: bool = True
     extra_clips: list[Path] = field(default_factory=list)
     captions: bool = True
+    allow_paid_services: bool = False
 
 
 @dataclass
@@ -32,7 +33,6 @@ def create_short(request: BuildRequest) -> BuildResult:
     clips = find_video_files(request.source_folder)
     clips.extend(path for path in request.extra_clips if path.exists())
 
-    # De-duplicate while preserving order.
     unique: list[Path] = []
     seen: set[str] = set()
     for clip in clips:
@@ -44,7 +44,8 @@ def create_short(request: BuildRequest) -> BuildResult:
     clips = unique[:30]
     if not clips:
         raise RuntimeError(
-            "No source video was found. Add local clips or enable Pexels in Settings."
+            "No source video was found. Add local clips or configure a free "
+            "online source provider."
         )
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -54,8 +55,12 @@ def create_short(request: BuildRequest) -> BuildResult:
 
     narration = None
     if request.use_voice and request.script.strip():
-        narration = job_temp / "voice.mp3"
-        synthesize_voice(request.script.strip(), request.voice, narration)
+        narration = synthesize_voice(
+            request.script.strip(),
+            request.voice,
+            job_temp / "voice.wav",
+            allow_paid_services=request.allow_paid_services,
+        )
 
     output = OUTPUT_DIR / f"{stamp}-{slug}.mp4"
     build_vertical_short(

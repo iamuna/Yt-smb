@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
-from shorts_factory.pipeline import BuildRequest, create_short
-
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from shorts_factory.pipeline import BuildRequest, create_short
 SMOKE_DIR = ROOT / "temp" / "ci-smoke"
 SOURCE_DIR = SMOKE_DIR / "sources"
 ARTIFACT_DIR = ROOT / "artifacts"

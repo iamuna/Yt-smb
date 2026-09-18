@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+data/
+input/
+output/
+temp/
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+client_secret*.json
+token*.json

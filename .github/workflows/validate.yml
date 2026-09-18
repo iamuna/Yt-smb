@@ -32,7 +32,7 @@ jobs:
           ffprobe -version
 
       - name: Compile Python sources
-        run: python -m compileall -q app.py shorts_factory tests
+        run: python -m compileall -q app.py shorts_factory tests tools
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
@@ -40,12 +40,17 @@ jobs:
       - name: Render a real demo Short
         run: python tests/render_smoke.py
 
-      - name: Upload rendered demo
+      - name: Render continuous CCTV footage demo
+        run: python tools/make_real_cctv_demo.py
+
+      - name: Upload rendered demos
         uses: actions/upload-artifact@v4
         with:
-          name: yt-smb-demo
+          name: yt-smb-demos
           path: |
             artifacts/yt-smb-demo.mp4
             artifacts/yt-smb-demo-metadata.json
+            artifacts/real-moving-cctv-parking-lot.mp4
+            artifacts/real-moving-cctv-parking-lot-metadata.json
           if-no-files-found: error
           retention-days: 14

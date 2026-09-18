@@ -12,19 +12,46 @@ SETTINGS_FILE = DATA_DIR / "settings.json"
 
 DEFAULT_SETTINGS = {
     "source_folder": str(INPUT_DIR),
-    "voice": "en-US-AriaNeural",
+    "voice": "default",
     "publish_enabled": False,
     "target_seconds": 35,
-    "use_pexels": True,
+    "use_online_sources": True,
+    "source_provider": "pexels",
     "auto_queue": True,
     "privacy_status": "private",
-    "ai_model": "gpt-5.6-luna",
+    "ai_provider": "ollama",
+    "ai_model": "qwen2.5:3b",
+    "ollama_base_url": "http://127.0.0.1:11434",
+    "allow_paid_services": False,
 }
 
 
 def ensure_directories() -> None:
     for folder in (DATA_DIR, INPUT_DIR, OUTPUT_DIR, TEMP_DIR):
         folder.mkdir(parents=True, exist_ok=True)
+
+
+def _migrate_settings(data: dict) -> dict:
+    migrated = dict(data)
+
+    # v0.2 compatibility.
+    if "use_online_sources" not in migrated and "use_pexels" in migrated:
+        migrated["use_online_sources"] = bool(migrated["use_pexels"])
+    if "source_provider" not in migrated:
+        migrated["source_provider"] = "pexels"
+
+    old_model = str(migrated.get("ai_model", ""))
+    if old_model.startswith("gpt-"):
+        migrated["ai_model"] = "qwen2.5:3b"
+        migrated["ai_provider"] = "ollama"
+
+    old_voice = str(migrated.get("voice", ""))
+    if old_voice.endswith("Neural"):
+        migrated["voice"] = "default"
+
+    # Cost safety: old configs never implicitly enable paid services.
+    migrated.setdefault("allow_paid_services", False)
+    return migrated
 
 
 def load_settings() -> dict:
@@ -39,7 +66,7 @@ def load_settings() -> dict:
         data = {}
 
     settings = DEFAULT_SETTINGS.copy()
-    settings.update(data)
+    settings.update(_migrate_settings(data))
     return settings
 
 

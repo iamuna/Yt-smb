@@ -8,8 +8,8 @@ from .ai import ShortPlan, generate_short_plan
 from .config import TEMP_DIR
 from .pipeline import BuildRequest, BuildResult, create_short
 from .queue import enqueue
-from .secrets import load_secrets
-from .sources import SourceAsset, fetch_pexels_broll
+from .secrets import get_source_api_key, load_secrets
+from .sources import SourceAsset, fetch_broll
 
 
 @dataclass
@@ -19,10 +19,13 @@ class AutoRequest:
     target_seconds: int
     voice: str
     use_voice: bool
-    use_pexels: bool
+    use_online_sources: bool
+    source_provider: str
     auto_queue: bool
     privacy_status: str
     ai_model: str
+    ollama_base_url: str
+    allow_paid_services: bool = False
 
 
 @dataclass
@@ -39,19 +42,23 @@ def run_auto_short(request: AutoRequest) -> AutoResult:
     plan = generate_short_plan(
         topic=request.topic,
         target_seconds=request.target_seconds,
-        api_key=secrets["openai_api_key"],
         model=request.ai_model,
+        base_url=request.ollama_base_url,
+        allow_paid_services=request.allow_paid_services,
     )
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     assets: list[SourceAsset] = []
 
-    if request.use_pexels and secrets.get("pexels_api_key", "").strip():
-        assets = fetch_pexels_broll(
+    if request.use_online_sources:
+        provider_key = get_source_api_key(secrets, request.source_provider)
+        assets = fetch_broll(
+            provider_id=request.source_provider,
             search_terms=plan.search_terms,
-            api_key=secrets["pexels_api_key"],
-            destination=TEMP_DIR / "pexels" / stamp,
+            api_key=provider_key,
+            destination=TEMP_DIR / "sources" / request.source_provider / stamp,
             max_clips=6,
+            allow_paid_services=request.allow_paid_services,
         )
 
     build = create_short(
@@ -64,6 +71,7 @@ def run_auto_short(request: AutoRequest) -> AutoResult:
             use_voice=request.use_voice,
             extra_clips=[asset.path for asset in assets],
             captions=True,
+            allow_paid_services=request.allow_paid_services,
         )
     )
 

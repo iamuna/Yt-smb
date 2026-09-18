@@ -15,6 +15,10 @@ DEFAULT_SETTINGS = {
     "voice": "en-US-AriaNeural",
     "publish_enabled": False,
     "target_seconds": 35,
+    "use_pexels": True,
+    "auto_queue": True,
+    "privacy_status": "private",
+    "ai_model": "gpt-5.6-luna",
 }
 
 

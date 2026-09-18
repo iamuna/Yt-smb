@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pyttsx3
@@ -13,15 +14,43 @@ LOCAL_TTS_PROFILE = ServiceCostProfile(
 )
 
 
+def _com_initialize() -> bool:
+    if sys.platform != "win32":
+        return False
+    try:
+        import pythoncom
+
+        pythoncom.CoInitialize()
+        return True
+    except Exception:
+        return False
+
+
+def _com_uninitialize(initialized: bool) -> None:
+    if not initialized:
+        return
+    try:
+        import pythoncom
+
+        pythoncom.CoUninitialize()
+    except Exception:
+        pass
+
+
 def available_voices() -> list[tuple[str, str]]:
+    com_initialized = _com_initialize()
     engine = pyttsx3.init()
     try:
         return [
-            (str(getattr(voice, "id", "")), str(getattr(voice, "name", "Voice")))
+            (
+                str(getattr(voice, "id", "")),
+                str(getattr(voice, "name", "Voice")),
+            )
             for voice in engine.getProperty("voices")
         ]
     finally:
         engine.stop()
+        _com_uninitialize(com_initialized)
 
 
 def synthesize_voice(
@@ -41,6 +70,7 @@ def synthesize_voice(
     output_path = output_path.with_suffix(".wav")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    com_initialized = _com_initialize()
     engine = pyttsx3.init()
     try:
         if voice and voice != "default":
@@ -57,6 +87,7 @@ def synthesize_voice(
         engine.runAndWait()
     finally:
         engine.stop()
+        _com_uninitialize(com_initialized)
 
     if not output_path.exists() or output_path.stat().st_size == 0:
         raise RuntimeError(

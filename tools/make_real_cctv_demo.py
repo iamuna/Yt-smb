@@ -63,18 +63,19 @@ def main() -> None:
     # This is one continuous section of real moving CCTV footage.
     # We only alter the presentation: lower FPS, light grain, security-camera HUD.
     filter_chain = (
+        "crop=236:420:x='80+5*t':y=48,"
+        "scale=1080:1920,"
         "fps=12,"
-        "scale=960:-2,"
         "eq=contrast=1.08:brightness=-0.02:saturation=0.42,"
         "noise=alls=5:allf=t+u,"
-        "drawbox=x=0:y=0:w=iw:h=64:color=black@0.42:t=fill,"
+        "drawbox=x=0:y=0:w=iw:h=110:color=black@0.42:t=fill,"
         "drawtext=text='CAM 07  DEALERSHIP LOT':"
-        "fontcolor=white:fontsize=26:x=18:y=16,"
-        "drawtext=text='REC':fontcolor=white:fontsize=24:x=w-78:y=16,"
-        "drawbox=x=w-24:y=22:w=9:h=9:color=red@0.92:t=fill,"
+        "fontcolor=white:fontsize=42:x=32:y=26,"
+        "drawtext=text='REC':fontcolor=white:fontsize=38:x=w-145:y=28,"
+        "drawbox=x=w-52:y=42:w=15:h=15:color=red@0.92:t=fill,"
         "drawtext=text='MOTION ALERT':"
         "enable='between(t,5.5,13.5)':"
-        "fontcolor=white:fontsize=24:x=18:y=h-48"
+        "fontcolor=white:fontsize=44:x=32:y=h-90"
     )
 
     run(
@@ -125,7 +126,8 @@ def main() -> None:
 
     streams = metadata.get("streams", [])
     video = next(item for item in streams if item.get("codec_name") == "h264")
-    assert int(video["width"]) == 960, metadata
+    assert int(video["width"]) == 1080, metadata
+    assert int(video["height"]) == 1920, metadata
     assert float(metadata["format"]["duration"]) >= 19.0, metadata
     assert int(metadata["format"]["size"]) > 200_000, metadata
 

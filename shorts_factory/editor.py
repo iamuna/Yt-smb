@@ -18,49 +18,112 @@ def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
-def _make_hook_overlay(text: str, output_path: Path) -> Path:
+def _text_overlay(
+    text: str,
+    output_path: Path,
+    *,
+    font_size: int,
+    top: int,
+    wrap_width: int,
+    max_lines: int,
+    pad_x: int = 48,
+    pad_y: int = 30,
+) -> Path:
     image = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
+    font = _font(font_size)
 
-    wrapped = textwrap.wrap(text.strip() or "Watch this", width=24)[:4]
-    font = _font(70)
+    wrapped = textwrap.wrap(text.strip() or "Watch this", width=wrap_width)[:max_lines]
     lines = "\n".join(wrapped)
-
     bbox = draw.multiline_textbbox(
         (0, 0),
         lines,
         font=font,
-        spacing=12,
+        spacing=10,
         align="center",
         stroke_width=3,
     )
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
 
-    pad_x = 55
-    pad_y = 38
-    left = max(45, (1080 - text_w) // 2 - pad_x)
-    top = 120
-    right = min(1035, (1080 + text_w) // 2 + pad_x)
+    left = max(40, (1080 - text_w) // 2 - pad_x)
+    right = min(1040, (1080 + text_w) // 2 + pad_x)
     bottom = top + text_h + pad_y * 2
 
     draw.rounded_rectangle(
         (left, top, right, bottom),
-        radius=34,
-        fill=(0, 0, 0, 175),
+        radius=30,
+        fill=(0, 0, 0, 185),
     )
     draw.multiline_text(
         ((1080 - text_w) // 2, top + pad_y),
         lines,
         font=font,
         fill=(255, 255, 255, 255),
-        spacing=12,
+        spacing=10,
         align="center",
         stroke_width=3,
         stroke_fill=(0, 0, 0, 255),
     )
     image.save(output_path)
     return output_path
+
+
+def _make_hook_overlay(text: str, output_path: Path) -> Path:
+    return _text_overlay(
+        text,
+        output_path,
+        font_size=70,
+        top=120,
+        wrap_width=24,
+        max_lines=4,
+    )
+
+
+def _caption_chunks(text: str, max_words: int = 6) -> list[str]:
+    words = text.replace("\n", " ").split()
+    chunks = []
+    for index in range(0, len(words), max_words):
+        chunk = " ".join(words[index : index + max_words]).strip()
+        if chunk:
+            chunks.append(chunk)
+    return chunks[:24]
+
+
+def _make_caption_overlays(
+    text: str,
+    duration: float,
+    temp_dir: Path,
+) -> list[tuple[Path, float, float]]:
+    chunks = _caption_chunks(text)
+    if not chunks or duration <= 0:
+        return []
+
+    total_words = max(1, sum(len(chunk.split()) for chunk in chunks))
+    cursor = 0.0
+    overlays: list[tuple[Path, float, float]] = []
+
+    for index, chunk in enumerate(chunks):
+        word_count = max(1, len(chunk.split()))
+        chunk_duration = duration * word_count / total_words
+        start = cursor
+        end = duration if index == len(chunks) - 1 else min(duration, cursor + chunk_duration)
+        cursor = end
+
+        path = temp_dir / f"caption-{index:03d}.png"
+        _text_overlay(
+            chunk,
+            path,
+            font_size=62,
+            top=1400,
+            wrap_width=24,
+            max_lines=3,
+            pad_x=42,
+            pad_y=24,
+        )
+        overlays.append((path, start, end))
+
+    return overlays
 
 
 def _normalize_segment(source: Path, output: Path, seconds: float) -> None:
@@ -113,6 +176,7 @@ def build_vertical_short(
     hook: str,
     target_seconds: int = 35,
     narration_path: Path | None = None,
+    caption_text: str = "",
 ) -> Path:
     if not clips:
         raise ValueError("No source clips were found.")
@@ -120,7 +184,6 @@ def build_vertical_short(
     temp_dir.mkdir(parents=True, exist_ok=True)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Build short normalized pieces so mixed resolutions/codecs concatenate reliably.
     segments: list[Path] = []
     elapsed = 0.0
     index = 0
@@ -135,7 +198,7 @@ def build_vertical_short(
             usable.append((clip, duration))
 
     if not usable:
-        raise RuntimeError("The selected folder contains no readable video clips.")
+        raise RuntimeError("The selected sources contain no readable video clips.")
 
     while elapsed < target_seconds and index < 40:
         source, duration = usable[index % len(usable)]
@@ -179,6 +242,7 @@ def build_vertical_short(
 
     video_duration = min(ffprobe_duration(joined), float(target_seconds))
     hook_png = _make_hook_overlay(hook, temp_dir / "hook.png")
+    captions = _make_caption_overlays(caption_text, video_duration, temp_dir)
 
     command = [
         "ffmpeg",
@@ -191,19 +255,33 @@ def build_vertical_short(
         str(hook_png),
     ]
 
+    for caption_path, _, _ in captions:
+        command += ["-loop", "1", "-i", str(caption_path)]
+
     narration_index = None
     if narration_path and narration_path.exists():
-        narration_index = 2
+        narration_index = 2 + len(captions)
         command += ["-i", str(narration_path)]
+
+    filters = [
+        "[0:v][1:v]overlay=0:0:enable='between(t,0,3.8)'[v1]"
+    ]
+    previous = "v1"
+
+    for idx, (_, start, end) in enumerate(captions):
+        input_index = 2 + idx
+        output_label = f"v{idx + 2}"
+        filters.append(
+            f"[{previous}][{input_index}:v]overlay=0:0:"
+            f"enable='between(t,{start:.3f},{end:.3f})'[{output_label}]"
+        )
+        previous = output_label
 
     command += [
         "-filter_complex",
-        (
-            "[0:v][1:v]overlay=0:0:"
-            "enable='between(t,0,3.8)'[v]"
-        ),
+        ";".join(filters),
         "-map",
-        "[v]",
+        f"[{previous}]",
     ]
 
     if narration_index is not None:

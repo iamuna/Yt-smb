@@ -81,7 +81,7 @@ def main() -> None:
             ),
             voice="default",
             target_seconds=12,
-            use_voice=False,
+            use_voice=True,
             captions=True,
             allow_paid_services=False,
         )

@@ -104,16 +104,25 @@
     }
   },
   "10": {
-    "class_type": "SaveWEBM",
+    "class_type": "CreateVideo",
     "inputs": {
       "images": [
         "9",
         0
       ],
+      "fps": "__YT_SMB_FPS__"
+    }
+  },
+  "11": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "10",
+        0
+      ],
       "filename_prefix": "yt_smb/generated",
-      "codec": "vp9",
-      "fps": "__YT_SMB_FPS__",
-      "crf": 20
+      "format": "mp4",
+      "codec": "h264"
     }
   }
 }

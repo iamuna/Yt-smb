@@ -23,6 +23,19 @@ DEFAULT_SETTINGS = {
     "ai_model": "qwen2.5:3b",
     "ollama_base_url": "http://127.0.0.1:11434",
     "allow_paid_services": False,
+
+    # Local AI video generation.
+    "video_generator_provider": "comfyui_wan22",
+    "comfyui_base_url": "http://127.0.0.1:8188",
+    "video_workflow_file": "",
+    "video_width": 480,
+    "video_height": 832,
+    "video_seconds": 5,
+    "video_fps": 16,
+    "video_negative_prompt": (
+        "text, subtitles, watermark, logo, low quality, duplicate objects, "
+        "deformed vehicles, unstable geometry, frame tearing"
+    ),
 }
 
 
@@ -51,6 +64,16 @@ def _migrate_settings(data: dict) -> dict:
 
     # Cost safety: old configs never implicitly enable paid services.
     migrated.setdefault("allow_paid_services", False)
+
+    # v0.4 video-generator defaults are local and provider-based.
+    migrated.setdefault("video_generator_provider", "comfyui_wan22")
+    migrated.setdefault("comfyui_base_url", "http://127.0.0.1:8188")
+    migrated.setdefault("video_workflow_file", "")
+    migrated.setdefault("video_width", 480)
+    migrated.setdefault("video_height", 832)
+    migrated.setdefault("video_seconds", 5)
+    migrated.setdefault("video_fps", 16)
+
     return migrated
 
 

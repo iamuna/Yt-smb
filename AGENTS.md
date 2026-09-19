@@ -21,6 +21,7 @@ Current free/local defaults:
 - Narration: local Windows speech through `pyttsx3`.
 - Editing: local FFmpeg.
 - Queue/database: local SQLite.
+- AI video generation: provider interface backed by local ComfyUI; default provider id is `comfyui_local_video`.
 - B-roll: provider interface; Pexels is currently registered and treated as a free provider.
 - YouTube: official OAuth/Data API integration; auto-upload remains off by default.
 
@@ -67,6 +68,23 @@ Current provider:
 To replace Pexels or add another provider, implement `SourceProvider` and register it. The GUI reads the registry dynamically.
 
 See `docs/SOURCE_PROVIDER_GUIDE.md`.
+
+### Video generators
+
+Video generation is separate from B-roll sourcing.
+
+Files:
+
+- `shorts_factory/video_generators/base.py`
+- `shorts_factory/video_generators/registry.py`
+- `shorts_factory/video_generators/comfyui_wan.py`
+- `shorts_factory/video_generation.py`
+
+The default provider talks to a local ComfyUI server and injects prompt/size/frame/seed values into an API-format workflow JSON.
+
+The current adapter is intentionally workflow-agnostic: Wan2.2, Kandinsky 5.0 T2V Lite, or another compatible local ComfyUI workflow can be used.
+
+Never hard-code the rest of YT SMB to one video model. See `docs/VIDEO_GENERATOR_GUIDE.md`.
 
 ### Rendering
 
@@ -144,7 +162,8 @@ Pexels remains optional. Local source clips work without a Pexels key.
 5. Pre-upload quality-control gate.
 6. Background BOT MODE with a user-controlled posting schedule.
 7. Analytics ingestion and performance learning.
-8. Package as a signed/portable Windows executable when stable.
+8. Integrate generated scenes directly into AUTO MAKE SHORT.
+9. Package as a signed/portable Windows executable when stable.
 
 ## Development discipline
 

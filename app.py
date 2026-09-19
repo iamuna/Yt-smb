@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import threading
+import time
 from pathlib import Path
 from tkinter import filedialog, messagebox
 
@@ -9,7 +11,7 @@ import customtkinter as ctk
 
 from shorts_factory.ai import ShortPlan, generate_short_plan, ollama_ready
 from shorts_factory.automation import AutoRequest, AutoResult, run_auto_short
-from shorts_factory.config import ensure_directories, load_settings, save_settings
+from shorts_factory.config import ROOT, ensure_directories, load_settings, save_settings
 from shorts_factory.pipeline import BuildRequest, create_short
 from shorts_factory.providers import available_source_providers
 from shorts_factory.queue import enqueue, list_recent, mark_failed, mark_uploaded, next_pending
@@ -21,7 +23,7 @@ from shorts_factory.secrets import (
 )
 from shorts_factory.utils import executable_available
 from shorts_factory.youtube import upload_video
-from shorts_factory.video_generation import generate_video
+from shorts_factory.video_generation import generate_video, generator_ready
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -32,7 +34,7 @@ class SettingsDialog(ctk.CTkToplevel):
         super().__init__(master)
         self.master_app = master
         self.title("YT SMB Settings")
-        self.geometry("760x650")
+        self.geometry("760x760")
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
@@ -813,23 +815,57 @@ class ShortsFactoryApp(ctk.CTk):
         workflow_file: Path,
     ) -> None:
         try:
-            result = generate_video(
-                provider_id=str(
-                    self.settings.get(
-                        "video_generator_provider",
-                        "comfyui_local_video",
+            provider_id = str(
+                self.settings.get(
+                    "video_generator_provider",
+                    "comfyui_local_video",
+                )
+            )
+            base_url = str(
+                self.settings.get(
+                    "comfyui_base_url",
+                    "http://127.0.0.1:8188",
+                )
+            )
+
+            if not generator_ready(
+                provider_id=provider_id,
+                base_url=base_url,
+                workflow_file=workflow_file,
+            ):
+                launcher = ROOT / "start_video_generator.bat"
+                if not launcher.exists():
+                    raise RuntimeError(
+                        "Local video generator launcher is missing."
                     )
-                ),
+
+                subprocess.Popen(
+                    ["cmd.exe", "/c", "start", "", str(launcher)],
+                    cwd=str(ROOT),
+                )
+
+                deadline = time.time() + 1800
+                while time.time() < deadline:
+                    if generator_ready(
+                        provider_id=provider_id,
+                        base_url=base_url,
+                        workflow_file=workflow_file,
+                    ):
+                        break
+                    time.sleep(2)
+                else:
+                    raise RuntimeError(
+                        "Local video generator did not become ready within 30 minutes. "
+                        "Check the ComfyUI setup window for an error."
+                    )
+
+            result = generate_video(
+                provider_id=provider_id,
                 prompt=prompt,
                 negative_prompt=str(
                     self.settings.get("video_negative_prompt", "")
                 ),
-                base_url=str(
-                    self.settings.get(
-                        "comfyui_base_url",
-                        "http://127.0.0.1:8188",
-                    )
-                ),
+                base_url=base_url,
                 workflow_file=workflow_file,
                 width=int(self.settings.get("video_width", 480)),
                 height=int(self.settings.get("video_height", 832)),
@@ -855,6 +891,7 @@ class ShortsFactoryApp(ctk.CTk):
             text=(
                 f"AI VIDEO GENERATED • {provider}\n"
                 f"{output_path}\n"
+                "Finished automatically as 1080x1920 MP4. "
                 "Use it as a source clip or build it into a Short."
             )
         )

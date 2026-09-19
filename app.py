@@ -320,7 +320,7 @@ class SettingsDialog(ctk.CTkToplevel):
             or "http://127.0.0.1:11434"
         )
         self.master_app.settings["source_provider"] = provider_id
-        self.master_app.settings["video_generator_provider"] = "comfyui_wan22"
+        self.master_app.settings["video_generator_provider"] = "comfyui_local_video"
         self.master_app.settings["comfyui_base_url"] = (
             self.comfyui_url_var.get().strip()
             or "http://127.0.0.1:8188"
@@ -817,7 +817,7 @@ class ShortsFactoryApp(ctk.CTk):
                 provider_id=str(
                     self.settings.get(
                         "video_generator_provider",
-                        "comfyui_wan22",
+                        "comfyui_local_video",
                     )
                 ),
                 prompt=prompt,

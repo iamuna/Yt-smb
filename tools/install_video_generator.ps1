@@ -50,18 +50,20 @@ function Get-FreeGB($path) {
 
 function Download-Resumable($url, $destination) {
     if (Test-Path $destination) {
-        $size = (Get-Item $destination).Length
-        if ($size -gt 10MB) {
-            Write-Host "Already present: $(Split-Path $destination -Leaf)"
-            return
-        }
+        Write-Host "Already complete: $(Split-Path $destination -Leaf)"
+        return
     }
 
     New-Item -ItemType Directory -Force -Path (Split-Path $destination -Parent) | Out-Null
+    $part = "$destination.part"
     $curl = Require-Curl
+
     Write-Host "Downloading $(Split-Path $destination -Leaf)..."
-    & $curl -L --fail --retry 5 --retry-delay 3 -C - -o $destination $url
+    Write-Host "Interrupted downloads resume automatically."
+    & $curl -L --fail --retry 5 --retry-delay 3 -C - -o $part $url
     if ($LASTEXITCODE -ne 0) { throw "Download failed: $url" }
+
+    Move-Item -Force $part $destination
 }
 
 function Find-ComfyApp {
@@ -98,28 +100,9 @@ $comfyApp = Find-ComfyApp
 if (-not $comfyApp) {
     Header "Downloading official ComfyUI Windows portable"
 
-    $headers = @{ "User-Agent" = "YT-SMB-Installer" }
-    $release = $null
-
-    foreach ($repoName in @("Comfy-Org/ComfyUI", "comfyanonymous/ComfyUI")) {
-        try {
-            $release = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$repoName/releases/latest"
-            if ($release) { break }
-        } catch {
-            Write-Host "Could not query $repoName; trying fallback..."
-        }
-    }
-
-    if (-not $release) { throw "Could not query the official ComfyUI release." }
-
-    $asset = $release.assets | Where-Object { $_.name -match "(?i)nvidia" -and $_.name -match "(?i)portable" -and $_.name -match "\.7z$" } | Select-Object -First 1
-    if (-not $asset) {
-        $asset = $release.assets | Where-Object { $_.name -match "(?i)nvidia.*\.7z$" } | Select-Object -First 1
-    }
-    if (-not $asset) { throw "No NVIDIA Windows portable ComfyUI archive was found in the latest official release." }
-
-    $archive = Join-Path $VendorDir $asset.name
-    Download-Resumable $asset.browser_download_url $archive
+    $archive = Join-Path $VendorDir "ComfyUI_windows_portable_nvidia.7z"
+    $portableUrl = "https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_nvidia.7z"
+    Download-Resumable $portableUrl $archive
 
     $sevenZip = Find-7Zip
     Write-Host "Extracting ComfyUI..."

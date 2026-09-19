@@ -144,9 +144,9 @@ if (-not $SkipModels) {
     $models = Join-Path $comfyApp "models"
     $base = "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main"
 
-    Download-Resumable "$base/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors?download=true" (Join-Path $models "diffusion_models\wan2.2_ti2v_5B_fp16.safetensors")
-    Download-Resumable "$base/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors?download=true" (Join-Path $models "text_encoders\umt5_xxl_fp8_e4m3fn_scaled.safetensors")
-    Download-Resumable "$base/vae/wan2.2_vae.safetensors?download=true" (Join-Path $models "vae\wan2.2_vae.safetensors")
+    Download-Resumable "$base/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors?download=true" (Join-Path $models "diffusion_models\wan2.2_ti2v_5B_fp16.safetensors")
+    Download-Resumable "$base/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors?download=true" (Join-Path $models "text_encoders\umt5_xxl_fp8_e4m3fn_scaled.safetensors")
+    Download-Resumable "$base/split_files/vae/wan2.2_vae.safetensors?download=true" (Join-Path $models "vae\wan2.2_vae.safetensors")
 }
 
 if (-not (Test-Path $WorkflowFile)) { throw "Bundled workflow is missing: $WorkflowFile" }

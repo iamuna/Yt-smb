@@ -47,16 +47,25 @@ jobs:
         run: python tests/render_smoke.py
 
       - name: Render continuous CCTV footage demo
+        continue-on-error: true
         run: python tools/make_real_cctv_demo.py
 
-      - name: Upload rendered demos
+      - name: Upload core rendered demo
         uses: actions/upload-artifact@v4
         with:
-          name: yt-smb-demos
+          name: yt-smb-demo
           path: |
             artifacts/yt-smb-demo.mp4
             artifacts/yt-smb-demo-metadata.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload optional moving CCTV demo
+        uses: actions/upload-artifact@v4
+        with:
+          name: yt-smb-moving-cctv-demo
+          path: |
             artifacts/real-moving-cctv-parking-lot.mp4
             artifacts/real-moving-cctv-parking-lot-metadata.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14

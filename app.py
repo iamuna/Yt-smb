@@ -21,6 +21,7 @@ from shorts_factory.secrets import (
 )
 from shorts_factory.utils import executable_available
 from shorts_factory.youtube import upload_video
+from shorts_factory.video_generation import generate_video
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -72,6 +73,17 @@ class SettingsDialog(ctk.CTkToplevel):
                 )
             )
         )
+        self.comfyui_url_var = ctk.StringVar(
+            value=str(
+                self.settings.get(
+                    "comfyui_base_url",
+                    "http://127.0.0.1:8188",
+                )
+            )
+        )
+        self.video_workflow_var = ctk.StringVar(
+            value=str(self.settings.get("video_workflow_file", ""))
+        )
 
         provider_id = str(self.settings.get("source_provider", "pexels"))
         provider_display = self.providers.get(provider_id, provider_id)
@@ -106,6 +118,32 @@ class SettingsDialog(ctk.CTkToplevel):
         ctk.CTkEntry(frame, textvariable=self.ollama_url_var).grid(
             row=row, column=1, sticky="ew", padx=14, pady=10
         )
+        row += 1
+
+        ctk.CTkLabel(frame, text="Video generator").grid(
+            row=row, column=0, sticky="w", padx=14, pady=10
+        )
+        ctk.CTkEntry(frame, textvariable=self.comfyui_url_var).grid(
+            row=row, column=1, sticky="ew", padx=14, pady=10
+        )
+        row += 1
+
+        ctk.CTkLabel(frame, text="Wan / ComfyUI workflow").grid(
+            row=row, column=0, sticky="w", padx=14, pady=10
+        )
+        workflow_row = ctk.CTkFrame(frame, fg_color="transparent")
+        workflow_row.grid(row=row, column=1, sticky="ew", padx=14, pady=10)
+        workflow_row.grid_columnconfigure(0, weight=1)
+        ctk.CTkEntry(
+            workflow_row,
+            textvariable=self.video_workflow_var,
+        ).grid(row=0, column=0, sticky="ew", padx=(0, 8))
+        ctk.CTkButton(
+            workflow_row,
+            text="Browse",
+            width=90,
+            command=self._choose_video_workflow,
+        ).grid(row=0, column=1)
         row += 1
 
         ctk.CTkLabel(frame, text="B-roll provider").grid(
@@ -246,6 +284,14 @@ class SettingsDialog(ctk.CTkToplevel):
             get_source_api_key(self.secrets, provider_id)
         )
 
+    def _choose_video_workflow(self) -> None:
+        path = filedialog.askopenfilename(
+            title="Choose ComfyUI API workflow JSON",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        )
+        if path:
+            self.video_workflow_var.set(path)
+
     def _choose_youtube_json(self) -> None:
         path = filedialog.askopenfilename(
             title="Choose Google OAuth client secrets JSON",
@@ -274,6 +320,14 @@ class SettingsDialog(ctk.CTkToplevel):
             or "http://127.0.0.1:11434"
         )
         self.master_app.settings["source_provider"] = provider_id
+        self.master_app.settings["video_generator_provider"] = "comfyui_wan22"
+        self.master_app.settings["comfyui_base_url"] = (
+            self.comfyui_url_var.get().strip()
+            or "http://127.0.0.1:8188"
+        )
+        self.master_app.settings["video_workflow_file"] = (
+            self.video_workflow_var.get().strip()
+        )
         self.master_app.settings["publish_enabled"] = self.publish_var.get()
         self.master_app.settings["privacy_status"] = self.privacy_var.get()
         self.master_app.settings["allow_paid_services"] = False
@@ -317,7 +371,7 @@ class ShortsFactoryApp(ctk.CTk):
         ctk.CTkLabel(
             header,
             text=(
-                "FREE LOCAL MODE • topic → local AI → B-roll → local voice → "
+                "FREE LOCAL MODE • prompt → AI video / B-roll → local voice → "
                 "captions → queue → YouTube"
             ),
             text_color=("gray35", "gray70"),
@@ -449,7 +503,18 @@ class ShortsFactoryApp(ctk.CTk):
 
         actions = ctk.CTkFrame(main, fg_color="transparent")
         actions.grid(row=9, column=0, sticky="ew", pady=(0, 12))
-        actions.grid_columnconfigure((0, 1), weight=1)
+        actions.grid_columnconfigure((0, 1, 2), weight=1)
+
+        self.generate_button = ctk.CTkButton(
+            actions,
+            text="GENERATE VIDEO",
+            height=60,
+            font=ctk.CTkFont(size=18, weight="bold"),
+            command=self._start_generate_video,
+        )
+        self.generate_button.grid(
+            row=0, column=0, sticky="ew", padx=(0, 6)
+        )
 
         self.auto_button = ctk.CTkButton(
             actions,
@@ -459,7 +524,7 @@ class ShortsFactoryApp(ctk.CTk):
             command=self._start_auto,
         )
         self.auto_button.grid(
-            row=0, column=0, sticky="ew", padx=(0, 6)
+            row=0, column=1, sticky="ew", padx=6
         )
 
         self.create_button = ctk.CTkButton(
@@ -469,7 +534,7 @@ class ShortsFactoryApp(ctk.CTk):
             command=self._start_manual_build,
         )
         self.create_button.grid(
-            row=0, column=1, sticky="ew", padx=(6, 0)
+            row=0, column=2, sticky="ew", padx=(6, 0)
         )
 
         self.progress = ctk.CTkProgressBar(main, mode="indeterminate")
@@ -607,6 +672,7 @@ class ShortsFactoryApp(ctk.CTk):
         )
 
     def _set_busy(self, message: str) -> None:
+        self.generate_button.configure(state="disabled")
         self.auto_button.configure(state="disabled")
         self.create_button.configure(state="disabled")
         self.plan_button.configure(state="disabled")
@@ -617,6 +683,7 @@ class ShortsFactoryApp(ctk.CTk):
     def _clear_busy(self) -> None:
         self.progress.stop()
         self.progress.set(0)
+        self.generate_button.configure(state="normal")
         self.auto_button.configure(state="normal")
         self.create_button.configure(state="normal")
         self.plan_button.configure(state="normal")
@@ -707,6 +774,91 @@ class ShortsFactoryApp(ctk.CTk):
                 f"B-roll searches: {', '.join(plan.search_terms)}"
             )
         )
+
+    def _start_generate_video(self) -> None:
+        prompt = self.topic_entry.get().strip()
+        if not prompt:
+            messagebox.showwarning(
+                "Prompt needed",
+                "Describe the video you want to generate in the top box.",
+            )
+            return
+
+        workflow_value = str(
+            self.settings.get("video_workflow_file", "")
+        ).strip()
+        workflow_file = Path(workflow_value) if workflow_value else None
+        if workflow_file is None or not workflow_file.is_file():
+            messagebox.showwarning(
+                "Video workflow needed",
+                (
+                    "Open Settings and choose a ComfyUI API-format Wan2.2 "
+                    "workflow JSON first. See workflows/README.md."
+                ),
+            )
+            return
+
+        self._set_busy(
+            "Generating a new AI video locally. This can take several minutes..."
+        )
+        threading.Thread(
+            target=self._video_generate_worker,
+            args=(prompt, workflow_file),
+            daemon=True,
+        ).start()
+
+    def _video_generate_worker(
+        self,
+        prompt: str,
+        workflow_file: Path,
+    ) -> None:
+        try:
+            result = generate_video(
+                provider_id=str(
+                    self.settings.get(
+                        "video_generator_provider",
+                        "comfyui_wan22",
+                    )
+                ),
+                prompt=prompt,
+                negative_prompt=str(
+                    self.settings.get("video_negative_prompt", "")
+                ),
+                base_url=str(
+                    self.settings.get(
+                        "comfyui_base_url",
+                        "http://127.0.0.1:8188",
+                    )
+                ),
+                workflow_file=workflow_file,
+                width=int(self.settings.get("video_width", 480)),
+                height=int(self.settings.get("video_height", 832)),
+                seconds=int(self.settings.get("video_seconds", 5)),
+                fps=int(self.settings.get("video_fps", 16)),
+                seed=None,
+                allow_paid_services=False,
+            )
+        except Exception as exc:
+            self.after(0, self._failed, str(exc))
+            return
+
+        self.after(0, self._video_generate_finished, result.path, result.provider)
+
+    def _video_generate_finished(
+        self,
+        output_path: Path,
+        provider: str,
+    ) -> None:
+        self._clear_busy()
+        self.last_output = output_path
+        self.result_label.configure(
+            text=(
+                f"AI VIDEO GENERATED • {provider}\n"
+                f"{output_path}\n"
+                "Use it as a source clip or build it into a Short."
+            )
+        )
+        self.open_output_button.configure(state="normal")
 
     def _start_auto(self) -> None:
         if not self._require_video_engine():

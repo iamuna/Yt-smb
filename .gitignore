@@ -15,3 +15,5 @@ temp/
 *.mp3
 client_secret*.json
 token*.json
+vendor/
+artifacts/

@@ -35,7 +35,9 @@ The default generation target is 480×832 and is intended to be finished/upscale
 
 The adapter is workflow-based, so it can use Wan2.2, Kandinsky 5.0 T2V Lite, or another compatible local ComfyUI video workflow without rewriting the app.
 
-See `workflows/README.md` and `docs/VIDEO_GENERATOR_GUIDE.md`.
+The bundled Wan2.2 API workflow is selected automatically; you do not need to build a ComfyUI graph by hand.
+
+See `workflows/README.md` and `docs/VIDEO_GENERATOR_GUIDE.md` if you want to swap models/workflows later.
 
 ## What AUTO MAKE SHORT does
 
@@ -65,14 +67,14 @@ optional YouTube upload
 
 1. Download or clone this repository.
 2. Double-click `setup.bat`.
-3. Let setup install Python packages.
-4. If FFmpeg is missing, setup can install it through Windows Package Manager.
-5. If Ollama is missing, setup can install it through Windows Package Manager.
-6. Let setup download the free local `qwen2.5:3b` model.
-7. Double-click `start.bat`.
-8. Optional: open **Settings** and add a Pexels API key for online B-roll.
-9. Type a topic/niche.
-10. Click **AUTO MAKE SHORT**.
+3. Let setup install the normal YT SMB dependencies, FFmpeg, and Ollama.
+4. When asked, choose **Y** to install the free local video generator.
+5. The installer downloads official ComfyUI portable plus the Wan2.2 5B files and configures YT SMB automatically.
+6. Double-click `start_video_generator.bat` when you want local video generation. Clicking **GENERATE VIDEO** can also start it automatically.
+7. Double-click `start.bat` to launch YT SMB.
+8. Type a video prompt and click **GENERATE VIDEO**, or use **AUTO MAKE SHORT** for the existing Shorts workflow.
+9. Generated video is automatically finished to true **1080×1920 (9:16)** MP4.
+10. Optional: add a Pexels API key or YouTube OAuth later.
 
 No OpenAI API key is required for the default workflow.
 

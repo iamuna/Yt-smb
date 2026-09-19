@@ -31,6 +31,12 @@ jobs:
           ffmpeg -version
           ffprobe -version
 
+      - name: Validate PowerShell installer syntax
+        shell: powershell
+        run: |
+          [void][scriptblock]::Create((Get-Content tools/install_video_generator.ps1 -Raw))
+          [void][scriptblock]::Create((Get-Content tools/start_video_generator.ps1 -Raw))
+
       - name: Compile Python sources
         run: python -m compileall -q app.py shorts_factory tests tools
 

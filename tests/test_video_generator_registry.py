@@ -100,7 +100,8 @@ class VideoGeneratorRegistryTests(unittest.TestCase):
         self.assertIn("Wan22ImageToVideoLatent", classes)
         self.assertIn("KSampler", classes)
         self.assertIn("VAEDecode", classes)
-        self.assertIn("SaveWEBM", classes)
+        self.assertIn("CreateVideo", classes)
+        self.assertIn("SaveVideo", classes)
 
 
 if __name__ == "__main__":

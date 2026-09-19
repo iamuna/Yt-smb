@@ -2,7 +2,7 @@
 
 Windows-first automation for producing YouTube Shorts from original scripts plus footage you own or are licensed to reuse.
 
-## Current version: v0.3 free-local architecture
+## Current version: v0.4 local video generator
 
 The normal YT SMB workflow is designed to run without a metered AI bill:
 
@@ -11,11 +11,31 @@ The normal YT SMB workflow is designed to run without a metered AI bill:
 - **Local narration:** Windows speech through `pyttsx3`.
 - **Editing:** FFmpeg.
 - **Queue/database:** SQLite.
+- **AI video generator:** local ComfyUI provider; supports replaceable local video workflows.
 - **Online B-roll:** replaceable provider interface; Pexels is the current provider.
 - **YouTube upload:** official OAuth/Data API integration.
 - **Paid-provider guard:** potentially paid providers are blocked unless the project is deliberately changed to allow them.
 
 External services can change their pricing, quotas, or terms in the future. YT SMB is designed to stop/fail instead of silently falling back to a paid provider.
+
+## Generate video from a prompt
+
+The main screen now has **GENERATE VIDEO**.
+
+Type a prompt such as:
+
+```
+grainy CCTV footage of a car losing control in a rainy underground parking garage,
+fixed security camera, realistic headlights, wet floor reflections, continuous motion
+```
+
+YT SMB sends the configured local ComfyUI workflow the prompt, negative prompt, seed, width, height, FPS and frame count, then saves the generated moving clip under `output/generated/`.
+
+The default generation target is 480×832 and is intended to be finished/upscaled to 1080×1920 for Shorts.
+
+The adapter is workflow-based, so it can use Wan2.2, Kandinsky 5.0 T2V Lite, or another compatible local ComfyUI video workflow without rewriting the app.
+
+See `workflows/README.md` and `docs/VIDEO_GENERATOR_GUIDE.md`.
 
 ## What AUTO MAKE SHORT does
 
@@ -172,4 +192,5 @@ It records the product goal, zero-cost constraint, current architecture, migrati
 - User-controlled scheduled BOT MODE.
 - YouTube analytics ingestion.
 - Performance feedback loop.
+- Direct generated-visuals mode inside AUTO MAKE SHORT.
 - Single Windows executable/installer.

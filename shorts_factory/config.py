@@ -25,7 +25,7 @@ DEFAULT_SETTINGS = {
     "allow_paid_services": False,
 
     # Local AI video generation.
-    "video_generator_provider": "comfyui_wan22",
+    "video_generator_provider": "comfyui_local_video",
     "comfyui_base_url": "http://127.0.0.1:8188",
     "video_workflow_file": "",
     "video_width": 480,
@@ -66,7 +66,7 @@ def _migrate_settings(data: dict) -> dict:
     migrated.setdefault("allow_paid_services", False)
 
     # v0.4 video-generator defaults are local and provider-based.
-    migrated.setdefault("video_generator_provider", "comfyui_wan22")
+    migrated.setdefault("video_generator_provider", "comfyui_local_video")
     migrated.setdefault("comfyui_base_url", "http://127.0.0.1:8188")
     migrated.setdefault("video_workflow_file", "")
     migrated.setdefault("video_width", 480)

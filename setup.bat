@@ -99,6 +99,19 @@ if defined OLLAMA_CMD (
 )
 
 echo.
+echo Local AI video generation is optional but fully supported.
+echo It installs ComfyUI plus a large local Wan2.2 model.
+set /p INSTALL_VIDEO_GEN="Install the free local VIDEO GENERATOR now? [Y/N]: "
+if /I "%INSTALL_VIDEO_GEN%"=="Y" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\install_video_generator.ps1"
+  if errorlevel 1 (
+    echo.
+    echo Video generator setup did not complete.
+    echo You can retry later with start_video_generator.bat
+  )
+)
+
+echo.
 echo ========================================
 echo Setup finished.
 echo Double-click start.bat to launch YT SMB.

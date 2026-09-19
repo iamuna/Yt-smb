@@ -7,13 +7,19 @@ from .comfyui_wan import ComfyUIWanGenerator
 
 
 _GENERATORS: dict[str, type[VideoGenerator]] = {
+    "comfyui_local_video": ComfyUIWanGenerator,
+    # Backwards-compatible alias from the first v0.4 implementation.
     "comfyui_wan22": ComfyUIWanGenerator,
 }
 
 
 def available_video_generators() -> dict[str, str]:
     return {
-        provider_id: provider_type.display_name
+        provider_id: (
+            "Local ComfyUI Video Generator"
+            if provider_id == "comfyui_local_video"
+            else provider_type.display_name
+        )
         for provider_id, provider_type in _GENERATORS.items()
     }
 

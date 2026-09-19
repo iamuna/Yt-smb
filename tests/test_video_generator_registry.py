@@ -1,23 +1,78 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
+from shorts_factory.config import DEFAULT_SETTINGS
 from shorts_factory.video_generators import (
+    VideoGenerationRequest,
     available_video_generators,
     get_video_generator,
 )
+from shorts_factory.video_generators.comfyui_wan import ComfyUIWanGenerator
 
 
 class VideoGeneratorRegistryTests(unittest.TestCase):
-    def test_local_wan_generator_is_registered(self):
+    def test_generic_local_generator_is_registered(self):
         providers = available_video_generators()
-        self.assertIn("comfyui_wan22", providers)
+        self.assertIn("comfyui_local_video", providers)
 
-    def test_default_generator_is_not_marked_paid(self):
+    def test_default_generator_is_local_and_free(self):
+        self.assertEqual(
+            DEFAULT_SETTINGS["video_generator_provider"],
+            "comfyui_local_video",
+        )
+        provider = get_video_generator("comfyui_local_video")
+        self.assertFalse(provider.cost_profile.may_charge_money)
+
+    def test_old_wan_id_remains_compatible(self):
         provider = get_video_generator("comfyui_wan22")
         self.assertFalse(provider.cost_profile.may_charge_money)
 
     def test_unknown_generator_does_not_fallback(self):
         with self.assertRaises(RuntimeError):
             get_video_generator("does-not-exist")
+
+    def test_workflow_placeholders_are_replaced(self):
+        graph = {
+            "1": {
+                "class_type": "Example",
+                "inputs": {
+                    "prompt": "__YT_SMB_PROMPT__",
+                    "negative": "__YT_SMB_NEGATIVE__",
+                    "width": "__YT_SMB_WIDTH__",
+                    "height": "__YT_SMB_HEIGHT__",
+                    "frames": "__YT_SMB_FRAMES__",
+                    "fps": "__YT_SMB_FPS__",
+                    "seed": "__YT_SMB_SEED__",
+                },
+            }
+        }
+
+        with tempfile.TemporaryDirectory() as directory:
+            workflow = Path(directory) / "workflow.json"
+            workflow.write_text(json.dumps(graph), encoding="utf-8")
+            provider = ComfyUIWanGenerator(workflow_file=workflow)
+
+            request = VideoGenerationRequest(
+                prompt="realistic CCTV parking lot",
+                negative_prompt="cartoon",
+                width=480,
+                height=832,
+                frames=81,
+                fps=16,
+                seed=1234,
+            )
+            loaded = provider._load_workflow(request)
+            inputs = loaded["1"]["inputs"]
+
+            self.assertEqual(inputs["prompt"], request.prompt)
+            self.assertEqual(inputs["negative"], request.negative_prompt)
+            self.assertEqual(inputs["width"], 480)
+            self.assertEqual(inputs["height"], 832)
+            self.assertEqual(inputs["frames"], 81)
+            self.assertEqual(inputs["fps"], 16)
+            self.assertEqual(inputs["seed"], 1234)
 
 
 if __name__ == "__main__":

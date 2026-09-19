@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.4 — Local AI video generator
+
+- Added a real prompt-to-video generation subsystem separate from B-roll sourcing.
+- Added pluggable `VideoGenerator` interface and registry.
+- Added local ComfyUI adapter using API-format workflows.
+- Added prompt, negative prompt, width, height, FPS, frame count and seed injection.
+- Added **GENERATE VIDEO** button to the main UI.
+- Added ComfyUI URL and workflow selection to Settings.
+- Default generation target is 480×832 for efficient local generation before 1080×1920 finishing.
+- Added provider documentation and workflow placeholder guide.
+- Preserved the zero-paid-services rule for video generation.
+- Kept a compatibility alias for the initial `comfyui_wan22` provider id while making `comfyui_local_video` the generic default.
+
 ## v0.3 — Free-local architecture
 
 - Replaced mandatory OpenAI API script generation with local Ollama.

@@ -82,6 +82,16 @@ Files:
 
 The default provider talks to a local ComfyUI server and injects prompt/size/frame/seed values into an API-format workflow JSON.
 
+Automatic local setup is implemented by:
+- `tools/install_video_generator.ps1` — downloads official ComfyUI portable and the current Wan2.2 5B model components, then writes YT SMB settings.
+- `tools/start_video_generator.ps1` — discovers the extracted ComfyUI install and starts it in low-VRAM mode.
+- `start_video_generator.bat` — user-facing launcher.
+- `workflows/wan22_5b_t2v_api.json` — bundled API workflow used by default.
+
+The Comfy-Org Wan repository currently stores required files under `split_files/`; keep installer URLs current if upstream moves them again. Large downloads use `.part` files and resume via curl before being renamed into place.
+
+Clicking **GENERATE VIDEO** will start the launcher automatically if ComfyUI is not already reachable, wait for the local server, generate the raw clip, and then FFmpeg-normalize it to true 1080×1920 MP4.
+
 The current adapter is intentionally workflow-agnostic: Wan2.2, Kandinsky 5.0 T2V Lite, or another compatible local ComfyUI workflow can be used.
 
 Never hard-code the rest of YT SMB to one video model. See `docs/VIDEO_GENERATOR_GUIDE.md`.
@@ -149,7 +159,9 @@ Windows user runs:
 3. Installs/detects FFmpeg.
 4. Installs/detects Ollama.
 5. Pulls `qwen2.5:3b`.
-6. Runs `start.bat`.
+6. Optionally accepts the video-generator install prompt in `setup.bat`.
+7. Runs `start_video_generator.bat` for local prompt-to-video generation (or lets **GENERATE VIDEO** auto-start it).
+8. Runs `start.bat`.
 
 Pexels remains optional. Local source clips work without a Pexels key.
 

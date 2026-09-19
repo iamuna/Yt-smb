@@ -12,6 +12,13 @@
 - Added provider documentation and workflow placeholder guide.
 - Preserved the zero-paid-services rule for video generation.
 - Kept a compatibility alias for the initial `comfyui_wan22` provider id while making `comfyui_local_video` the generic default.
+- Added bundled Wan2.2 5B API workflow.
+- Added one-click ComfyUI + model installer with resumable multi-GB downloads.
+- Added one-click local generator launcher with dynamic ComfyUI discovery.
+- `setup.bat` now offers local video-generator installation.
+- **GENERATE VIDEO** auto-starts the local server if needed and waits for readiness.
+- Generated media is automatically finished to true 1080×1920 H.264 MP4.
+- Added Windows CI checks for PowerShell installer syntax and bundled workflow placeholders.
 
 ## v0.3 — Free-local architecture
 

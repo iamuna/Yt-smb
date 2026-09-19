@@ -9,6 +9,7 @@ INPUT_DIR = ROOT / "input"
 OUTPUT_DIR = ROOT / "output"
 TEMP_DIR = ROOT / "temp"
 SETTINGS_FILE = DATA_DIR / "settings.json"
+DEFAULT_VIDEO_WORKFLOW = ROOT / "workflows" / "wan22_5b_t2v_api.json"
 
 DEFAULT_SETTINGS = {
     "source_folder": str(INPUT_DIR),
@@ -27,7 +28,7 @@ DEFAULT_SETTINGS = {
     # Local AI video generation.
     "video_generator_provider": "comfyui_local_video",
     "comfyui_base_url": "http://127.0.0.1:8188",
-    "video_workflow_file": "",
+    "video_workflow_file": str(DEFAULT_VIDEO_WORKFLOW),
     "video_width": 480,
     "video_height": 832,
     "video_seconds": 5,
@@ -68,7 +69,9 @@ def _migrate_settings(data: dict) -> dict:
     # v0.4 video-generator defaults are local and provider-based.
     migrated.setdefault("video_generator_provider", "comfyui_local_video")
     migrated.setdefault("comfyui_base_url", "http://127.0.0.1:8188")
-    migrated.setdefault("video_workflow_file", "")
+    migrated.setdefault("video_workflow_file", str(DEFAULT_VIDEO_WORKFLOW))
+    if not str(migrated.get("video_workflow_file", "")).strip():
+        migrated["video_workflow_file"] = str(DEFAULT_VIDEO_WORKFLOW)
     migrated.setdefault("video_width", 480)
     migrated.setdefault("video_height", 832)
     migrated.setdefault("video_seconds", 5)

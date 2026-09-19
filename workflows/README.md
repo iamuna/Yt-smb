@@ -1,22 +1,49 @@
 # YT SMB local AI video workflow
 
-YT SMB can generate video through a **local ComfyUI server**.
+YT SMB includes a ready-to-use local **Wan2.2 TI2V-5B** API workflow.
 
-The default provider is designed for **Wan2.2 TI2V-5B** or another local ComfyUI video workflow.
+## Normal setup
 
-## One-time setup
+You do **not** need to build a ComfyUI workflow manually.
 
-1. Install and start ComfyUI locally.
-2. Install/download the video model used by your workflow.
-3. Build or load a working text-to-video workflow in ComfyUI.
-4. Export the workflow in **API format**.
-5. Replace the relevant values in the exported JSON with YT SMB placeholders below.
-6. Save the JSON somewhere on your computer.
-7. In YT SMB, open **Settings → Wan / ComfyUI workflow → Browse** and select it.
+Run:
 
-## Placeholders
+`setup.bat`
 
-YT SMB recursively replaces these exact string values before sending the workflow to ComfyUI:
+When prompted:
+
+`Install the free local VIDEO GENERATOR now? [Y/N]`
+
+Choose **Y**.
+
+YT SMB then:
+
+1. Downloads the latest official NVIDIA ComfyUI Windows portable build.
+2. Extracts it under `vendor/`.
+3. Downloads the required Wan2.2 5B diffusion model.
+4. Downloads the Wan text encoder.
+5. Downloads the Wan2.2 VAE.
+6. Uses the bundled `workflows/wan22_5b_t2v_api.json`.
+7. Writes the workflow and local ComfyUI URL into YT SMB settings.
+8. Keeps `allow_paid_services=False`.
+
+After setup, use:
+
+`start_video_generator.bat`
+
+or click **GENERATE VIDEO** in YT SMB; the app can launch the local generator automatically.
+
+## Default generation path
+
+Prompt → local ComfyUI → Wan2.2 5B → moving WebM → FFmpeg finishing → **1080×1920 MP4**.
+
+The raw generation target is intentionally smaller for local GPU practicality. The result handed back by YT SMB is a true 9:16 Short.
+
+## Custom workflows
+
+Advanced users can still choose another API-format ComfyUI workflow in Settings.
+
+YT SMB recursively replaces these exact values:
 
 - `__YT_SMB_PROMPT__`
 - `__YT_SMB_NEGATIVE__`
@@ -26,40 +53,8 @@ YT SMB recursively replaces these exact string values before sending the workflo
 - `__YT_SMB_FPS__`
 - `__YT_SMB_SEED__`
 
-Example: if your positive text encoder node contains:
-
-```json
-{
-  "inputs": {
-    "text": "__YT_SMB_PROMPT__"
-  }
-}
-```
-
-YT SMB replaces that value with the prompt typed in the app.
-
-For width/height/frame count/seed inputs, replace the normal numeric value with the corresponding placeholder string. YT SMB substitutes the correct integer before queueing the workflow.
-
-## Output requirement
-
-The workflow must save or expose a generated media output in the ComfyUI history response.
-
-The current adapter looks for output entries named:
-
-- `videos`
-- `gifs`
-- `images`
-
-Video output is preferred.
-
-## Shorts format
-
-The local generation target defaults to **480×832**, close to 9:16 and much cheaper to generate than native 1080×1920.
-
-The finishing pipeline can upscale/crop the result to **1080×1920** for YouTube Shorts.
+The generator is provider/workflow based, so a future local model can replace Wan without rewriting the app.
 
 ## Cost rule
 
-The local ComfyUI/Wan provider is marked as a zero-metered-cost provider.
-
-YT SMB will not automatically switch to a paid video-generation API if local generation fails.
+The local generator is marked as zero-metered-cost. YT SMB does not automatically fall back to a paid video API.
